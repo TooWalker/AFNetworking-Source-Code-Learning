@@ -36,16 +36,19 @@
 - (void)setUp {
     [super setUp];
 
-    self.sessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:self.baseURL sessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
-
+    /**
+     准备工作：
+     首先得实例化两个变量，一个是 AFNetworkActivityIndicatorManager 的 networkActivityIndicatorManager，另一个是 AFHTTPSessionManager 的 sessionManager。这里用后者来进行网络请求，从而测试前者的功能
+     */
     self.networkActivityIndicatorManager = [[AFNetworkActivityIndicatorManager alloc] init];
+    self.sessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:self.baseURL sessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
     self.networkActivityIndicatorManager.enabled = YES;
 }
 
 - (void)tearDown {
     [super tearDown];
+    /** 释放资源 并 取消session任务 */
     self.networkActivityIndicatorManager = nil;
-
     [self.sessionManager invalidateSessionCancelingTasks:YES];
 }
 

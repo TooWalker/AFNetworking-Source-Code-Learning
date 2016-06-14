@@ -19,6 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+/**
+ *  这个类别和同一目录下的 UIRefreshControl+AFNetworking 里面的结构像极了，简直就是双胞胎，
+ *  在理解的时候，可以看 UIRefreshControl+AFNetworking 中的注释，帮助理解这个类别
+ */
+
 #import "UIActivityIndicatorView+AFNetworking.h"
 #import <objc/runtime.h>
 
@@ -37,6 +42,8 @@
 @implementation UIActivityIndicatorView (AFNetworking)
 
 - (AFActivityIndicatorViewNotificationObserver *)af_notificationObserver {
+    
+    /** objc_getAssociatedObject 和 objc_setAssociatedObject 方法来绑定一个实例变量 */
     AFActivityIndicatorViewNotificationObserver *notificationObserver = objc_getAssociatedObject(self, @selector(af_notificationObserver));
     if (notificationObserver == nil) {
         notificationObserver = [[AFActivityIndicatorViewNotificationObserver alloc] initWithActivityIndicatorView:self];

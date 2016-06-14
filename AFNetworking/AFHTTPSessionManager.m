@@ -123,9 +123,14 @@
                                                  downloadProgress:downloadProgress
                                                           success:success
                                                           failure:failure];
-
+    /** 调用NSURLSessionDataTask的resume来开启这个session task */
     [dataTask resume];
-
+    /**
+     *  知识点：session task的几种状态的操作函数
+            suspend -- 可以让当前的任务暂停
+            resume ---- 方法不仅可以启动任务,还可以唤醒suspend状态的任务
+            cancel ----- 方法可以取消当前的任务,你也可以向处于suspend状态的任务发送cancel消息,任务如果被取消便不能再恢复到之前的状态.
+     */
     return dataTask;
 }
 
@@ -256,6 +261,10 @@
                                          failure:(void (^)(NSURLSessionDataTask *, NSError *))failure
 {
     NSError *serializationError = nil;
+    /** 构建NSMutableURLRequest:
+     1.先调用AFHTTPRequestSerializer的requestWithMethod函数构建request
+     2.处理request构建产生的错误 – serializationError
+     */
     NSMutableURLRequest *request = [self.requestSerializer requestWithMethod:method URLString:[[NSURL URLWithString:URLString relativeToURL:self.baseURL] absoluteString] parameters:parameters error:&serializationError];
     if (serializationError) {
         if (failure) {
@@ -268,6 +277,7 @@
     }
 
     __block NSURLSessionDataTask *dataTask = nil;
+    /** 根据已构建好的Request来构建NSURLSessionDataTask */
     dataTask = [self dataTaskWithRequest:request
                           uploadProgress:uploadProgress
                         downloadProgress:downloadProgress

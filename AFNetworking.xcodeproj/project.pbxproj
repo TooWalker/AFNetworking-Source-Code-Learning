@@ -420,8 +420,8 @@
 		298D7C7F1BC2C88F00FD3B3E /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				298D7CD21BC2CAD500FD3B3E /* AFNetworking UIKit Tests */,
 				298D7CD11BC2CABE00FD3B3E /* AFNetworking Tests */,
+				298D7CD21BC2CAD500FD3B3E /* AFNetworking UIKit Tests */,
 				298D7C8A1BC2C88F00FD3B3E /* AFTestCase.h */,
 				298D7C8B1BC2C88F00FD3B3E /* AFTestCase.m */,
 			);
@@ -448,9 +448,9 @@
 		298D7CD21BC2CAD500FD3B3E /* AFNetworking UIKit Tests */ = {
 			isa = PBXGroup;
 			children = (
+				298D7C861BC2C88F00FD3B3E /* AFNetworkActivityManagerTests.m */,
 				298D7C801BC2C88F00FD3B3E /* AFAutoPurgingImageCacheTests.m */,
 				298D7C841BC2C88F00FD3B3E /* AFImageDownloaderTests.m */,
-				298D7C861BC2C88F00FD3B3E /* AFNetworkActivityManagerTests.m */,
 				298D7C8C1BC2C88F00FD3B3E /* AFUIActivityIndicatorViewTests.m */,
 				298D7C8D1BC2C88F00FD3B3E /* AFUIImageViewTests.m */,
 				298D7C8E1BC2C88F00FD3B3E /* AFUIRefreshControlTests.m */,
@@ -501,18 +501,18 @@
 		299522451BBF125A00859F49 /* AFNetworking */ = {
 			isa = PBXGroup;
 			children = (
+				299522511BBF125A00859F49 /* AFURLSessionManager.h */,
+				299522521BBF125A00859F49 /* AFURLSessionManager.m */,
 				299522461BBF125A00859F49 /* AFHTTPSessionManager.h */,
 				299522471BBF125A00859F49 /* AFHTTPSessionManager.m */,
-				299522491BBF125A00859F49 /* AFNetworkReachabilityManager.h */,
-				2995224A1BBF125A00859F49 /* AFNetworkReachabilityManager.m */,
-				2995224B1BBF125A00859F49 /* AFSecurityPolicy.h */,
-				2995224C1BBF125A00859F49 /* AFSecurityPolicy.m */,
 				2995224D1BBF125A00859F49 /* AFURLRequestSerialization.h */,
 				2995224E1BBF125A00859F49 /* AFURLRequestSerialization.m */,
 				2995224F1BBF125A00859F49 /* AFURLResponseSerialization.h */,
 				299522501BBF125A00859F49 /* AFURLResponseSerialization.m */,
-				299522511BBF125A00859F49 /* AFURLSessionManager.h */,
-				299522521BBF125A00859F49 /* AFURLSessionManager.m */,
+				299522491BBF125A00859F49 /* AFNetworkReachabilityManager.h */,
+				2995224A1BBF125A00859F49 /* AFNetworkReachabilityManager.m */,
+				2995224B1BBF125A00859F49 /* AFSecurityPolicy.h */,
+				2995224C1BBF125A00859F49 /* AFSecurityPolicy.m */,
 			);
 			path = AFNetworking;
 			sourceTree = "<group>";
@@ -520,14 +520,16 @@
 		299522851BBF13C700859F49 /* UIKit+AFNetworking */ = {
 			isa = PBXGroup;
 			children = (
-				299522861BBF13C700859F49 /* AFAutoPurgingImageCache.h */,
-				299522871BBF13C700859F49 /* AFAutoPurgingImageCache.m */,
-				299522881BBF13C700859F49 /* AFImageDownloader.h */,
-				299522891BBF13C700859F49 /* AFImageDownloader.m */,
 				2995228A1BBF13C700859F49 /* AFNetworkActivityIndicatorManager.h */,
 				2995228B1BBF13C700859F49 /* AFNetworkActivityIndicatorManager.m */,
 				2995228C1BBF13C700859F49 /* UIActivityIndicatorView+AFNetworking.h */,
 				2995228D1BBF13C700859F49 /* UIActivityIndicatorView+AFNetworking.m */,
+				299522981BBF13C700859F49 /* UIRefreshControl+AFNetworking.h */,
+				299522991BBF13C700859F49 /* UIRefreshControl+AFNetworking.m */,
+				299522861BBF13C700859F49 /* AFAutoPurgingImageCache.h */,
+				299522871BBF13C700859F49 /* AFAutoPurgingImageCache.m */,
+				299522881BBF13C700859F49 /* AFImageDownloader.h */,
+				299522891BBF13C700859F49 /* AFImageDownloader.m */,
 				299522901BBF13C700859F49 /* UIButton+AFNetworking.h */,
 				299522911BBF13C700859F49 /* UIButton+AFNetworking.m */,
 				299522921BBF13C700859F49 /* UIImage+AFNetworking.h */,
@@ -536,8 +538,6 @@
 				299522951BBF13C700859F49 /* UIKit+AFNetworking.h */,
 				299522961BBF13C700859F49 /* UIProgressView+AFNetworking.h */,
 				299522971BBF13C700859F49 /* UIProgressView+AFNetworking.m */,
-				299522981BBF13C700859F49 /* UIRefreshControl+AFNetworking.h */,
-				299522991BBF13C700859F49 /* UIRefreshControl+AFNetworking.m */,
 				2995229A1BBF13C700859F49 /* UIWebView+AFNetworking.h */,
 				2995229B1BBF13C700859F49 /* UIWebView+AFNetworking.m */,
 			);

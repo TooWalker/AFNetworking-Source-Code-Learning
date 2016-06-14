@@ -171,11 +171,43 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 #pragma mark -
 
+// 定义了一个static的方法，表示该方法只能在本文件中使用
+// 函数整体上使用了单例模式
 static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
     static NSArray *_AFHTTPRequestSerializerObservedKeyPaths = nil;
+    
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _AFHTTPRequestSerializerObservedKeyPaths = @[NSStringFromSelector(@selector(allowsCellularAccess)), NSStringFromSelector(@selector(cachePolicy)), NSStringFromSelector(@selector(HTTPShouldHandleCookies)), NSStringFromSelector(@selector(HTTPShouldUsePipelining)), NSStringFromSelector(@selector(networkServiceType)), NSStringFromSelector(@selector(timeoutInterval))];
+        /**
+         *  此处需要observer的keypath为:
+         
+             allowsCellularAccess:
+                     是否允许使用设备的蜂窝移动网络来创建request，默认为允许
+             cachePolicy:
+                     创建的request所使用的缓存策略，默认使用`NSURLRequestUseProtocolCachePolicy`，该策略表示
+                     如果缓存不存在，直接从服务端获取。如果缓存存在，会根据response中的Cache-Control字段判断
+                     下一步操作，如: Cache-Control字段为must-revalidata, 则 询问服务端该数据是否有更新，无更新话
+                     直接返回给用户缓存数据，若已更新，则请求服务端.
+             HTTPShouldHandleCookies:
+                     如果设置HTTPShouldHandleCookies为YES，就处理存储在NSHTTPCookieStore中的cookies
+                     HTTPShouldHandleCookies表示是否应该给request设置cookie并随request一起发送出去
+             HTTPShouldUsePipelining:
+                     HTTPShouldUsePipelining表示receiver(理解为iOS客户端)的下一个信息是否必须等到上一个请求回复才能发送。
+                     如果为YES表示可以，NO表示必须等receiver收到先前的回复才能发送下个信息
+             networkServiceType:
+                     设定request的network service类型. 默认是`NSURLNetworkServiceTypeDefault`.
+                     这个network service是为了告诉系统网络层这个request使用的目的
+                     比如NSURLNetworkServiceTypeVoIP表示的就这个request是用来请求网际协议通话技术(Voice over IP)。
+                     系统能根据提供的信息来优化网络处理，从而优化电池寿命，网络性能等等
+             timeoutInterval:
+                     超时机制，默认60秒
+         */
+        _AFHTTPRequestSerializerObservedKeyPaths = @[NSStringFromSelector(@selector(allowsCellularAccess)),
+                                                     NSStringFromSelector(@selector(cachePolicy)),
+                                                     NSStringFromSelector(@selector(HTTPShouldHandleCookies)),
+                                                     NSStringFromSelector(@selector(HTTPShouldUsePipelining)),
+                                                     NSStringFromSelector(@selector(networkServiceType)),
+                                                     NSStringFromSelector(@selector(timeoutInterval))];
     });
 
     return _AFHTTPRequestSerializerObservedKeyPaths;
@@ -352,22 +384,44 @@ forHTTPHeaderField:(NSString *)field
 
 #pragma mark -
 
+/**
+     注：requestWithMethod是AFHTTPRequestSerializer的一个成员函数，并且AFHTTPRequestSerializer
+        遵循AFURLRequestSerialization协议
+ 
+ 
+     使用指定的HTTP method和URLString来构建一个NSMutableURLRequest对象实例
+     
+     如果method是GET、HEAD、DELETE，那parameter将会被用来构建一个基于url编码的查询字符串（query url）
+     ，并且这个字符串会直接加到request的url后面。对于其他的Method，比如POST/PUT，它们会根
+     据parameterEncoding属性进行编码，而后加到request的http body上。
+ 
+     @param method      request的HTTP methodt，比如 `GET`, `POST`, `PUT`, or `DELETE`. 该参数不能为空
+     @param URLString   用来创建request的URL
+     @param parameters  既可以对method为GET的request设置一个查询字符串(query string)，也可以设置到request的HTTP body上
+     @param error       构建request时发生的错误
+     
+     @return  一个NSMutableURLRequest的对象
+ */
 - (NSMutableURLRequest *)requestWithMethod:(NSString *)method
                                  URLString:(NSString *)URLString
                                 parameters:(id)parameters
                                      error:(NSError *__autoreleasing *)error
 {
+    /** 进行url转化和参数化断言 */
     NSParameterAssert(method);
+    
     NSParameterAssert(URLString);
-
     NSURL *url = [NSURL URLWithString:URLString];
-
     NSParameterAssert(url);
 
+    /** 使用url构建并初始化NSMutableURLRequest，然后设置HTTPMethod */
     NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
     mutableRequest.HTTPMethod = method;
 
+    /** 给NSMutableURLRequest自带的属性赋值 */
+    /** NSURLRequest/NSMutableURLRequest需要赋值的属性可以在AFHTTPRequestSerializerObservedKeyPaths()中找到 */
     for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
+        /** 通过判断mutableObservedChangedKeyPaths（NSMutableSet）中是否有这个keyPath，来设定mutableRequest对应的keyPath值 */
         if ([self.mutableObservedChangedKeyPaths containsObject:keyPath]) {
             [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
         }
@@ -478,7 +532,7 @@ forHTTPHeaderField:(NSString *)field
     NSParameterAssert(request);
 
     NSMutableURLRequest *mutableRequest = [request mutableCopy];
-
+    /** 设置request的http header field */
     [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
         if (![request valueForHTTPHeaderField:field]) {
             [mutableRequest setValue:value forHTTPHeaderField:field];
@@ -487,7 +541,9 @@ forHTTPHeaderField:(NSString *)field
 
     NSString *query = nil;
     if (parameters) {
+        /** 根据parameter来构建查询字符串 */
         if (self.queryStringSerialization) {
+            /** 如果自定义了queryStringSerialization（AFQueryStringSerializationBlock的block变量）。那么就使用自定义的queryStringSerialization构建方式（此方法在AFNetworking的test中用的比较多） */
             NSError *serializationError;
             query = self.queryStringSerialization(request, parameters, &serializationError);
 
@@ -499,8 +555,10 @@ forHTTPHeaderField:(NSString *)field
                 return nil;
             }
         } else {
+            /** 如果没有自定义queryStringSerialization（AFQueryStringSerializationBlock的block变量）。 */
             switch (self.queryStringSerializationStyle) {
                 case AFHTTPRequestQueryStringDefaultStyle:
+                    /** 使用的是AFQueryStringFromParameters() 构建方式 */
                     query = AFQueryStringFromParameters(parameters);
                     break;
             }
