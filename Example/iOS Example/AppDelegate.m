@@ -27,13 +27,18 @@
 
 @implementation AppDelegate
 
-- (BOOL)application:(__unused UIApplication *)application didFinishLaunchingWithOptions:(__unused NSDictionary *)launchOptions
-{
+- (BOOL)application:(__unused UIApplication *)application didFinishLaunchingWithOptions:(__unused NSDictionary *)launchOptions{
+    
+    /** NSURLCache 为您的应用的 URL 请求提供了内存中（对应memoryCapacity）以及磁盘上（对应diskCapacity）的综合缓存机制。所以你想使用NSURLCache 带来的好处，就需要在此处设置一个 sharedURLCache。 */
     NSURLCache *URLCache = [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024 diskCapacity:20 * 1024 * 1024 diskPath:nil];
     [NSURLCache setSharedURLCache:URLCache];
     
+    
+    /** 当你有session task正在运行时，这个小菊花就会转。这个是自动检测的，只需要你设置 AFNetworkingActivityIndicatorManager 的sharedManager 中的 enabled 设为 YES 即可。 */
     [[AFNetworkActivityIndicatorManager sharedManager] setEnabled:YES];
     
+    
+    /** 知识点：UITableViewController 可以使用 initWithStyle 进行初始化 */
     UITableViewController *viewController = [[GlobalTimelineViewController alloc] initWithStyle:UITableViewStylePlain];
     self.navigationController = [[UINavigationController alloc] initWithRootViewController:viewController];
     self.navigationController.navigationBar.tintColor = [UIColor darkGrayColor];

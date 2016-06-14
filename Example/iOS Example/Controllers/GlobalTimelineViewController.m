@@ -36,7 +36,8 @@
 
 - (void)reload:(__unused id)sender {
     self.navigationItem.rightBarButtonItem.enabled = NO;
-
+    
+    /** 通过 Post 本身（model）的 globalTimelinePostsWithBlock 函数获取数据，这里作者将网络端的请求放在了 model 里面 */
     NSURLSessionTask *task = [Post globalTimelinePostsWithBlock:^(NSArray *posts, NSError *error) {
         if (!error) {
             self.posts = posts;

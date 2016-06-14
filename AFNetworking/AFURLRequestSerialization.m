@@ -526,7 +526,16 @@ forHTTPHeaderField:(NSString *)field
 }
 
 #pragma mark - NSKeyValueObserving
-
+/**
+ *  知识点：手动通知
+ 
+ KVO中有两种通知Observer的方式，自动通知和手动通知。自动通知顾名思义就是只要值变化了，就自动通知观察者。
+ 
+ ①但是有时候我们有些地方的值变化了，并不想通知观察者亦或不想立即通知观察者
+ ②此处虽然值还没变，但是我也想通知观察者，那么就可以使用手动通知，在你想发送给观察者消息的地方，加上willChangeValueForKey和didChangeValueForKey。
+ 
+ 说白了只要加上这两句话，就会通知观察者，不管是不是值变化了（亲测值没变化也有效）。不过，在此之前最好是把自动通知关掉，可以利用automaticallyNotifiesObserversForKey:来返回NO，达到关闭自动通知的功能（当然，开着也行，那么自动通知和手动通知会揉在一起，执行起来很乱）
+ */
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key {
     if ([AFHTTPRequestSerializerObservedKeyPaths() containsObject:key]) {
         return NO;

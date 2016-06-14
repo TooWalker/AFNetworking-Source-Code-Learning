@@ -56,6 +56,10 @@ NS_EXTENSION_UNAVAILABLE_IOS("Use view controller based solutions where appropri
 */
 @property (readonly, nonatomic, assign, getter=isNetworkActivityIndicatorVisible) BOOL networkActivityIndicatorVisible;
 
+//================================================================================================//
+/**
+ *  既然session task已经开始了，为什么不直接使用Active作为状态，还要搞出一个activationDelay，这是因为Apple的HIG(Human Interface Guidelines)说有些session task时间太短了，有可能用户还没意识到session task的进行，就已经结束了，就没必要搞个菊花在上面转啊转的（这个用户的意识盲区在此处默认设定为1秒，即activationDelay）。至于completionDelay，是因为如果有多个session task正在进行，前一个task结束之后，不一会（这个不一会的时间，默认是0.17秒，可能利用了大数据分析出来的（鬼知道怎么测出来了），也就是completionDelay）另一个task就开始，此处认为这个间隙没必要停止菊花转。流程图片：http://t.cn/R56WQ1X
+ */
 /**
  A time interval indicating the minimum duration of networking activity that should occur before the activity indicator is displayed. The default value 1 second. If the network activity indicator should be displayed immediately when network activity occurs, this value should be set to 0 seconds.
  
@@ -71,6 +75,9 @@ NS_EXTENSION_UNAVAILABLE_IOS("Use view controller based solutions where appropri
  */
 
 @property (nonatomic, assign) NSTimeInterval completionDelay;
+//================================================================================================//
+
+
 
 /**
  Returns the shared network activity indicator manager object for the system.

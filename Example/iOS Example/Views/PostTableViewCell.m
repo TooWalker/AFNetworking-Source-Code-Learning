@@ -57,10 +57,13 @@
 }
 
 + (CGFloat)heightForCellWithPost:(Post *)post {
+    /** 使用 post 中存储的 text 值来计算高度，如果这个高度不够 70 的话，取 70 */
     return (CGFloat)fmaxf(70.0f, (float)[self detailTextHeight:post.text] + 45.0f);
 }
 
 + (CGFloat)detailTextHeight:(NSString *)text {
+    /** - boundingRectWithSize: options: attributes: context: 
+        根据文本内容计算文本高度的方法 */
     CGRect rectToFit = [text boundingRectWithSize:CGSizeMake(240.0f, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: [UIFont systemFontOfSize:12.0f]} context:nil];
     return rectToFit.size.height;
 }
