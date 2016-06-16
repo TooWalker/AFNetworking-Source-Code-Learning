@@ -107,17 +107,23 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 #pragma mark -
 
+/**
+ *  主要是判断返回的response是否可用。有用的话，才会做下一步操作
+ */
 - (BOOL)validateResponse:(NSHTTPURLResponse *)response
                     data:(NSData *)data
                    error:(NSError * __autoreleasing *)error
 {
+    // 初始response是可用的，不过下面还需要要过五关斩六将
     BOOL responseIsValid = YES;
     NSError *validationError = nil;
 
+    // 简单的为空判断和类型判断，注意如果response为空或类型不对，反而responseValid为YES
     if (response && [response isKindOfClass:[NSHTTPURLResponse class]]) {
+        // 如果 response 对应的 mimeType 不被这个 ResponseSerializer 所接受，那么就认为 Response 不可用
         if (self.acceptableContentTypes && ![self.acceptableContentTypes containsObject:[response MIMEType]] &&
             !([response MIMEType] == nil && [data length] == 0)) {
-
+            // 会返回unacceptable content-type的信息，并将错误信息记录在了mutableUserInfo中
             if ([data length] > 0 && [response URL]) {
                 NSMutableDictionary *mutableUserInfo = [@{
                                                           NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: unacceptable content-type: %@", @"AFNetworking", nil), [response MIMEType]],
@@ -127,13 +133,14 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                 if (data) {
                     mutableUserInfo[AFNetworkingOperationFailingURLResponseDataErrorKey] = data;
                 }
-
+                // 利用mutableUserInfo构建一个NSError对象
                 validationError = AFErrorWithUnderlyingError([NSError errorWithDomain:AFURLResponseSerializationErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:mutableUserInfo], validationError);
             }
 
             responseIsValid = NO;
         }
-
+        
+        // 判断返回的statusCode是否被允许
         if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) {
             NSMutableDictionary *mutableUserInfo = [@{
                                                NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedStringFromTable(@"Request failed: %@ (%ld)", @"AFNetworking", nil), [NSHTTPURLResponse localizedStringForStatusCode:response.statusCode], (long)response.statusCode],
@@ -151,6 +158,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         }
     }
 
+    // 将 error 设置为 validationError
     if (error && !responseIsValid) {
         *error = validationError;
     }
@@ -160,6 +168,9 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
 #pragma mark - AFURLResponseSerialization
 
+/**
+ *  这里面并没有对data做任何改变，也就是说父类AFHTTPResponseSerializer中的responseObjectForResponse:返回的就是最原始的data。对于data的处理，就交给了各个子类具体实现
+ */
 - (id)responseObjectForResponse:(NSURLResponse *)response
                            data:(NSData *)data
                           error:(NSError *__autoreleasing *)error
@@ -225,6 +236,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /** AFJSONResponseSerializer接受的content-type有@"application/json", @"text/json", @"text/javascript" */
     self.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript", nil];
 
     return self;
@@ -236,8 +248,11 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                            data:(NSData *)data
                           error:(NSError *__autoreleasing *)error
 {
+    // 判断当前response是否有效
     if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        // 还记得validateResponse:中如果content-type不满足，那么产生的validationError就是Domain为AFURLResponseSerializationErrorDomain，code为NSURLErrorCannotDecodeContentData
         if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
+            // 因为不支持这个content-type，所以不用解析了，直接返回nil
             return nil;
         }
     }
@@ -245,19 +260,25 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
     id responseObject = nil;
     NSError *serializationError = nil;
     // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
+    // 对于'head :ok'，Rails返回的是一个空格 (这是Safari上的一个bug)，并且这样的JSON格式不会被NSJSONSerialization解析。
     // See https://github.com/rails/rails/issues/1742
+    // 如果是单个空格，就不解析
     BOOL isSpace = [data isEqualToData:[NSData dataWithBytes:" " length:1]];
     if (data.length > 0 && !isSpace) {
+        // 使用系统自带的NSJSONSerialization来解析NSData数据
         responseObject = [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:&serializationError];
     } else {
         return nil;
     }
 
+    // 如果需要移除JSON数据中对应value为空（nil或NSNull）的key，那么就使用AFJSONObjectByRemovingKeysWithNullValues函数
+    // AFJSONObjectByRemovingKeysWithNullValues通过递归的方法，把JSON中NSDictionary的数据（不包括NSArray）中的对应value为空的key移除
     if (self.removesKeysWithNullValues && responseObject) {
         responseObject = AFJSONObjectByRemovingKeysWithNullValues(responseObject, self.readingOptions);
     }
 
     if (error) {
+        // 如果serializationError不为空，那么最终的error其实就是serializationError
         *error = AFErrorWithUnderlyingError(serializationError, *error);
     }
 
@@ -313,6 +334,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /** AFXMLParserResponseSerializer接受的content-type有@"application/xml", @"text/xml" */
     self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/xml", @"text/xml", nil];
 
     return self;
@@ -325,11 +347,13 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                           error:(NSError *__autoreleasing *)error
 {
     if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        /** 如果不支持该content-type */
         if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
             return nil;
         }
     }
 
+    /** 使用NSXMLParser解析NSData数据 */
     return [[NSXMLParser alloc] initWithData:data];
 }
 
@@ -338,7 +362,9 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 #pragma mark -
 
 #ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
-
+/**
+ *  AFXMLDocumentResponseSerializer是MAC上所用到的，这里不赘述了
+ */
 @implementation AFXMLDocumentResponseSerializer
 
 + (instancetype)serializer {
@@ -441,6 +467,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
         return nil;
     }
 
+    /** AFPropertyListResponseSerializer接受的content-type有@"application/x-plist" */
     self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/x-plist", nil];
 
     return self;
@@ -453,6 +480,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
                           error:(NSError *__autoreleasing *)error
 {
     if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        // 如果不支持该content-type，返回nil
         if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
             return nil;
         }
@@ -460,11 +488,11 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
 
     id responseObject;
     NSError *serializationError = nil;
-
+    // 使用NSPropertyListSerialization来解析NSData数据
     if (data) {
         responseObject = [NSPropertyListSerialization propertyListWithData:data options:self.readOptions format:NULL error:&serializationError];
     }
-
+    // 如果serializationError不为空，那么最终的error其实就是serializationError
     if (error) {
         *error = AFErrorWithUnderlyingError(serializationError, *error);
     }
@@ -600,6 +628,7 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
 
     if (colorSpaceModel == kCGColorSpaceModelRGB) {
         uint32_t alpha = (bitmapInfo & kCGBitmapAlphaInfoMask);
+// 保存clang诊断的上下文，类似OpenGL状态机，和后面的pop配对使用
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wassign-enum"
         if (alpha == kCGImageAlphaNone) {
@@ -645,6 +674,7 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
         return nil;
     }
 
+    //AFImageResponseSerializer接受的content-type有@"image/tiff", @"image/jpeg", @"image/gif", @"image/png", @"image/ico", @"image/x-icon", @"image/bmp", @"image/x-bmp", @"image/x-xbitmap", @"image/x-win-bitmap"
     self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"image/tiff", @"image/jpeg", @"image/gif", @"image/png", @"image/ico", @"image/x-icon", @"image/bmp", @"image/x-bmp", @"image/x-xbitmap", @"image/x-win-bitmap", nil];
 
 #if TARGET_OS_IOS || TARGET_OS_TV
@@ -665,12 +695,16 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
                           error:(NSError *__autoreleasing *)error
 {
     if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        // 如果不支持该content-type，返回nil
         if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
             return nil;
         }
     }
 
 #if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH
+    // iOS和TV平台默认automaticallyInflatesResponseImage为YES
+    // 下面的NSData转图片的方法，之前SDWebImage分析过，就不赘述了
+    // 感兴趣的话可以查看(http://www.cnblogs.com/polobymulberry/p/5060110.html)
     if (self.automaticallyInflatesResponseImage) {
         return AFInflatedImageFromResponseWithDataAtScale((NSHTTPURLResponse *)response, data, self.imageScale);
     } else {
@@ -755,6 +789,8 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
                            data:(NSData *)data
                           error:(NSError *__autoreleasing *)error
 {
+    // 可能确实不能确定返回的responsed的content-type，此时可以使用AFCompoundResponseSerializer
+    // 总会找到合适的Serializer
     for (id <AFURLResponseSerialization> serializer in self.responseSerializers) {
         if (![serializer isKindOfClass:[AFHTTPResponseSerializer class]]) {
             continue;
@@ -762,6 +798,7 @@ static UIImage * AFInflatedImageFromResponseWithDataAtScale(NSHTTPURLResponse *r
 
         NSError *serializerError = nil;
         id responseObject = [serializer responseObjectForResponse:response data:data error:&serializerError];
+        // 终于遍历到合适的Serializer
         if (responseObject) {
             if (error) {
                 *error = AFErrorWithUnderlyingError(serializerError, *error);

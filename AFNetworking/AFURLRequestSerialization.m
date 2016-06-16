@@ -116,6 +116,7 @@ NSString * AFPercentEscapedStringFromString(NSString *string) {
 FOUNDATION_EXPORT NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary);
 FOUNDATION_EXPORT NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value);
 
+/** 把这些构建好的AFQueryStringPair一个个用&连接好 */
 NSString * AFQueryStringFromParameters(NSDictionary *parameters) {
     NSMutableArray *mutablePairs = [NSMutableArray array];
     for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
@@ -187,7 +188,7 @@ static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
                      创建的request所使用的缓存策略，默认使用`NSURLRequestUseProtocolCachePolicy`，该策略表示
                      如果缓存不存在，直接从服务端获取。如果缓存存在，会根据response中的Cache-Control字段判断
                      下一步操作，如: Cache-Control字段为must-revalidata, 则 询问服务端该数据是否有更新，无更新话
-                     直接返回给用户缓存数据，若已更新，则请求服务端.
+                     直接返回给用户缓存数据，若已更新，则请求服务端
              HTTPShouldHandleCookies:
                      如果设置HTTPShouldHandleCookies为YES，就处理存储在NSHTTPCookieStore中的cookies
                      HTTPShouldHandleCookies表示是否应该给request设置cookie并随request一起发送出去
@@ -565,18 +566,27 @@ forHTTPHeaderField:(NSString *)field
         }
     }
 
+    /**
+     *  判断该request中是否包含了GET、HEAD、DELETE（都包含在HTTPMethodsEncodingParametersInURI）。因为这几个method的query是拼接到url后面的。而POST、PUT是把query拼接到http body中的
+     */
     if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+        /**
+         *  如果method是GET、HEAD、DELETE等。最后将query合并到mutbleRequest的query url上。不过这里还是要分情况讨论，如果request的query url不为空，就在生成的query前拼接&字符，再拼接到原先的query url上，如果request的query url为空，就将生成的的query前拼接？字符，再拼接到request的url上
+         */
         if (query && query.length > 0) {
             mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
         }
     } else {
+        /** 如果method是POST、PUT等 */
         // #2864: an empty string is a valid x-www-form-urlencoded payload
         if (!query) {
             query = @"";
         }
+        /** 判断request的Content-Type是否设置了，如果没有，就默认设置为application/x-www-form-urlencoded */
         if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
             [mutableRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
         }
+        /** 将query设置到http body上 */
         [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
     }
 

@@ -452,6 +452,7 @@
     return method_getImplementation(class_getInstanceMethod(class, selector));
 }
 
+// 保存clang诊断的上下文，类似OpenGL状态机，和后面的pop配对使用
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
 - (IMP)_originalAFResumeImplementation {
