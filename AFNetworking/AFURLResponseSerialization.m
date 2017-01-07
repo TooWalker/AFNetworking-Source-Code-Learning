@@ -140,6 +140,7 @@ static id AFJSONObjectByRemovingKeysWithNullValues(id JSONObject, NSJSONReadingO
             responseIsValid = NO;
         }
         
+        
         // 判断返回的statusCode是否被允许
         if (self.acceptableStatusCodes && ![self.acceptableStatusCodes containsIndex:(NSUInteger)response.statusCode] && [response URL]) {
             NSMutableDictionary *mutableUserInfo = [@{
